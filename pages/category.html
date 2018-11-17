@@ -1,0 +1,200 @@
+<div id="category">
+	<button class="btn btn-success btn-sm addBtn">新增</button>
+	<button class="btn btn-success btn-sm allDelBtn">批量删除</button>
+	<table class="table table-bordered text-center" >
+		<tr>
+			<td>编号</td>
+			<td>栏目名称</td>
+			<td>父栏目</td>
+			<td> 描述 </td>
+			<td>操作</td>
+		</tr>
+	</table>
+	<div class="modal" id="lmModal">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header text-center">
+					<div class="backDiv"><i class="iconfont icon-zuo"></i><span>返回</span></div>
+					<div class="modal-title">添加栏目</div>
+				</div>
+				<div class="modal-body">
+					<form class="form">
+						<div class="form-group">
+							<label for="">栏目名称</label>
+							<input type="text" name="categoryName" class="form-control">
+						</div>
+						<div class="form-group">
+							<label for="">父栏目</label>
+							<select name="categoryParent"  class="form-control">
+								<option value="">请选择</option>
+							</select>
+						</div>
+						<div class="form-group">
+							<label for="">描述</label>
+							<textarea name="categoryComment" cols="10" rows="5" class="form-control"></textarea>
+						</div>
+						<div class="form-group hide">
+							<button type="reset"></button>
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<span class="messageSpan"></span>
+					<button class="btn btn-success btn-sm confirmBtn">确认</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<style>
+	#category{
+		background: #fff;
+		padding: 10px;
+	}
+	.table{
+		margin-top: 10px;
+	}
+	.modal-dialog{
+		width: 300px;
+		margin-top: 0;
+		margin-right: 0;
+	}
+	.backDiv{
+		float: left;
+	}
+	.modal{
+		background: rgba(0,0,0,0.4);
+	}
+	.backDiv{
+		cursor: pointer;
+	}
+	#category table i{
+		color: #66bb0d;
+		cursor: pointer;
+	}
+	#category table i:nth-child(2){
+		color:red;
+		margin-left: 10px;
+	}
+	.messageSpan{
+		color: red;
+	}
+
+</style>
+<script>
+	$(function(){
+		$('.modal-content').height($(window).height());
+
+		//新增
+		$('.addBtn').click(function(){
+			$('button[type=reset]').trigger('click');
+			$('.messageSpan').html("");
+			addOption();
+			$('#lmModal').show();
+
+		})
+		//返回
+		$('.backDiv').click(function(){
+			$('#lmModal').hide();
+
+		})
+		//确认保存
+		$('.confirmBtn').click(function(){
+			var name=$('input[name=categoryName]').val();
+			var parent=$('select[name=categoryParent]').val();
+			var comment=$('textarea[name=categoryComment]').val();
+			if(name&&comment){
+				var obj={
+					name:name,
+					parentId:parent,
+					comment:comment,
+					no:'',
+				}
+				$.post(baseURL+'/manager/category/saveOrUpdateCategory',obj,function(res){
+					alert('保存成功');
+					console.log('保存成功');
+					loadData();
+				})
+				$('#lmModal').hide();
+
+			}else{
+				$('.messageSpan').html("请输入完整信息");
+			}
+
+		});
+		//删除
+		$('#category table').on({
+			click:function(){
+				// 获取id,传递给后台
+				var id = $(this).closest('tr').find('input[type=checkbox]').val();
+				var obj = {
+					id:id
+				};
+				$.get(baseURL+'/manager/category/deleteCategoryById',obj,function(res){
+					if(res.status==200){
+						alert('删除成功');
+						loadData();
+					}else{
+						alert('删除失败');
+						console.log(res.message);
+					}
+				})
+			}
+		},'i[title=删除]');
+		//批量删除
+		$('.allDelBtn').click(function(){
+			// 获取用户选择的checkbox,获取对应的id数组,转换成字符串传递给后台
+			var ids = $('#category input[type=checkbox]:checked').map(function(index,item){
+				return $(item).val();
+			}).get();
+			// ids:'1,2,3,4'
+			var obj = {
+				ids:ids.toString()
+			};
+			$.post(baseURL+'/manager/category/batchDeleteCategory',obj,function(res){
+				if(res.status==200){
+					alert("批量删除成功");
+					loadData();
+				}else{
+					alert("批量删除失败");
+					console.log(res.message);
+				}
+			});
+
+		});
+		
+		//加载
+		loadData();
+		function loadData(){
+		$('#category table tr:not(:first)').remove();
+		$.get(baseURL+'/manager/category/findAllCategory',function(res){
+			res.data.forEach(function(item,index){
+				var $tr = $(`<tr>
+					<td><input type="checkbox" value="`+item.id+`"></td>
+					<td>`+item.name+`</td>
+					<td>`+(item.parent?item.parent.name:'-')+`</td>
+					<td>`+item.comment+`</td>
+					<td>
+						<i class="iconfont icon-edit-1-copy" title="修改"></i>
+						<i class="iconfont icon-shanchu" title="删除"></i>
+					</td>
+				</tr>`);
+				$('#category table').append($tr);
+			});
+
+		});
+		}
+		//追加option
+	    function addOption(){
+	    	$('#category table select option:not(:first)').remove();
+	    	$.get(baseURL+'/manager/category/findAllCategory',function(res){
+	    		res.data.forEach(function(item,index){
+	    			var $option=$('<option value="'+item.id+'">'+item.name+'</option>');
+	    			$('#category select').append($option);
+	    		})
+	    	})
+	    }
+	    //
+
+	})
+</script>
